@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+
+        <title>Chat Group Websocket</title>
+    </head>
+    <body>
+        <!-- ootstrap Bundle with Popper -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+
+        <div class="container">
+            <div class="row">
+                <form>
+                    <input class="btn btn-danger" type="button" id="reset" value="重設">
+                </form>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+            <div class="col">
+                <div class="card">                
+                    <h5 class="card-header">使用者</h5>
+                    <div class="card-body">
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">使用者名稱</label>
+                                <input class="form-control" id="usr_id" value="User B">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">房間名稱</label>
+                                <input class="form-control" id="room_id" value="Room A">
+                                <input class="btn btn-primary" type="button" id="create_room" value="加入房間">
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" id="snd_msg" rows="3" placeholder="訊息"></textarea>
+                                <input class="btn btn-primary" type="button" id="send_msg" value="發送訊息">
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="cordn_sync_ctl" checked>
+                                <label class="form-check-label">座標同步</label>
+                            </div>
+                            <div class="card">
+                                <div class="card-body" id="cordn_xy">
+                                    (x,y)
+                                </div>
+                            </div>   
+                            </br>
+                            <label>訊息</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="card-text" id="rev_msg"></p>
+                                </div>
+                            </div>         
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
+<script>
+    var ws = new WebSocket("wss://127.0.0.1:8443/");
+    ws.onmessage = function(e) {
+        let rev_obj = JSON.parse(e.data);
+        switch (rev_obj.func_id) {
+            case "msg":
+                $( "#rev_msg" ).append(rev_obj.usr_id + ": " + rev_obj.msg + "</br>");
+                break;
+            case "cordn":
+                $( "#cordn_xy" ).html("(" + rev_obj.x + "," + rev_obj.y + ")");
+                break;
+        }
+    }
+
+    $( "#reset" ).click(function() {
+        $( "#rev_msg" ).html("");
+        $( "#create_room" ).val("加入房間");
+        $( "#create_room" ).prop('disabled', false);
+        $( "#cordn_xy" ).html("(x,y)");
+    });
+    
+    $( "#create_room" ).click(function() {
+        $( "#create_room" ).prop('disabled', true);
+        $( "#create_room" ).val("已加入");
+    });
+
+    $( "#create_room"  ).click(function() {
+        let create_room_obj = {
+            func_id: "conn",
+            usr_id: $( "#usr_id" ).val(),
+            room_id: $( "#room_id" ).val()
+        };
+        ws.send(JSON.stringify(create_room_obj));
+    });
+
+    $( "#send_msg" ).click(function() {
+        let send_msg_obj = {
+            func_id: "msg",
+            usr_id: $( "#usr_id" ).val(),
+            room_id: $( "#room_id" ).val(),
+            msg: $( "#snd_msg" ).val()
+        };
+        ws.send(JSON.stringify(send_msg_obj));
+    });
+    
+    $( "#cordn_sync_ctl" ).click(function() {
+        let sync_ctl_obj = {
+            "room_id": $( "#room_id" ).val(),
+            "usr_id": $( "#usr_id" ).val(),
+            "cordn_sync_ctl": $( "#cordn_sync_ctl" ).prop("checked")
+        };
+        $.ajax({
+            url: "cordn_sync_ctl",
+            data: JSON.stringify(sync_ctl_obj),
+            type: "POST",
+            dataType: "json",
+            contentType: "application/json;charset=utf-8"
+        });
+    });
+</script>

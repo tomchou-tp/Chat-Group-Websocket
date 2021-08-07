@@ -69,12 +69,12 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const serv = https.createServer({
-	key: fs.readFileSync("./cert/key"),
-    cert: fs.readFileSync("./cert/cert")
+	key: fs.readFileSync("./cert/demo_key"),
+    cert: fs.readFileSync("./cert/demo_cert")
 }, app);
 
 serv.listen(8443, function() {
-    console.log('runing Web Server in ' + 8443 + ' port...');
+    console.log('Web server is running.');
 });
 
 serv.on('upgrade', (request, socket, head) => {

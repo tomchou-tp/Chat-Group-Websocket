@@ -73,7 +73,7 @@ const serv = https.createServer({
     cert: fs.readFileSync("./cert/demo_cert")
 }, app);
 
-serv.listen(8443, function() {
+serv.listen(process.env.PORT || 8443, function() {
     console.log('Web server is running.');
 });
 

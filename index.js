@@ -69,11 +69,11 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const serv = https.createServer({
-	key: fs.readFileSync("./cert/demo_key"),
+    key: fs.readFileSync("./cert/demo_key"),
     cert: fs.readFileSync("./cert/demo_cert")
 }, app);
 
-serv.listen(8443,'127.0.0.1', function() {
+serv.listen(8443, function() {
     console.log('Web server is running.');
 });
 

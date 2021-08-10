@@ -108,7 +108,7 @@ app.use(express.static("public"));
 
 const serv = http.createServer(app);
 
-serv.listen(process.env.PORT || 8443, function() {
+serv.listen(process.env.PORT || 8080, function() {
     console.log("Web server is running.");
 });
 

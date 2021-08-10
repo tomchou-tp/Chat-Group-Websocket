@@ -135,6 +135,7 @@
             if (e.code == 4000) {
                 room_not_joined();
             } else {
+                ws.close();
                 setTimeout(function(e) {
                     ws_connect(join_room);
                 }, 1000);

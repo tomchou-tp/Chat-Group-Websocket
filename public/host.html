@@ -136,9 +136,10 @@
             if (e.code == 4000) {
                 room_not_created();
             } else {
+                ws.close();
                 setTimeout(function(e) {
                     ws_connect(join_room);
-                }, 1000);
+                }, 500);
             }
         };
     }

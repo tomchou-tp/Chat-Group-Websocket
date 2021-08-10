@@ -8,10 +8,10 @@
         <!-- Bootstrap CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
 
-        <title>Chat Group Websocket</title>
+        <title>Host - Chat Group Websocket</title>
     </head>
     <body>
-        <!-- ootstrap Bundle with Popper -->
+        <!-- Bootstrap Bundle with Popper -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
 
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
@@ -37,22 +37,24 @@
                             <div class="mb-3">
                                 <label class="form-label">房間名稱</label>
                                 <input class="form-control" id="room_id" value="Room A">
-                                <input class="btn btn-primary" type="button" id="create_room" value="建立房間">
+                                <input class="btn btn-primary" type="button" id="create_room_btn" value="建立房間">
+                                <p id="create_room_stat"></p>
                             </div>
                             <div class="mb-3">
-                                <textarea class="form-control" id="snd_msg" rows="3" placeholder="訊息"></textarea>
-                                <input class="btn btn-primary" type="button" id="send_msg" value="發送訊息">
+                                <textarea class="form-control" id="snd_msg" rows="3" placeholder="訊息" disabled></textarea>
+                                <input class="btn btn-primary" type="button" id="snd_msg_btn" value="發送訊息" disabled>
+                                <p id="snd_msg_res"></p>
                             </div>
                             <div class="mb-3">
-                                <input class="form-control" id="cordn_x" placeholder="x">
-                                <input class="form-control" id="cordn_y" placeholder="y">
-                                <input class="btn btn-primary" type="button" id="send_cordn" value="發送座標">
+                                <input class="form-control" id="cordn_x" placeholder="x" disabled>
+                                <input class="form-control" id="cordn_y" placeholder="y" disabled>
+                                <input class="btn btn-primary" type="button" id="snd_cordn" value="發送座標" disabled>
                             </div>
                             <label>訊息</label>
                             <div class="mb-3">
                                 <div class="card">
                                     <div class="card-body">
-                                        <p class="card-text" id="rev_msg"></p>
+                                        <p class="card-text" id="rev_msg" disabled></p>
                                     </div>
                                 </div>
                             </div>
@@ -66,55 +68,128 @@
 </html>
 
 <script>
-    var ws = new WebSocket("wss://" + window.location.hostname + ":8443/");
-    ws.onmessage = function(e) {
-        let rev_obj = JSON.parse(e.data);
-        switch (rev_obj.func_id) {
-            case "msg":
-                $( "#rev_msg" ).append(rev_obj.usr_id + ": " + rev_obj.msg + "</br>");
-                break;
-        }
+    function room_not_created() {
+        $( "#create_room_stat" ).html("尚未建立房間");
+        $( "#create_room_btn" ).val("建立房間");
+        $( "#create_room_btn" ).prop("disabled", false);
+        $( "#snd_msg_btn" ).prop("disabled", true);
+        $( "#snd_msg" ).prop("disabled", true);
+        $( "#cordn_x" ).prop("disabled", true);
+        $( "#cordn_y" ).prop("disabled", true);
+        $( "#snd_cordn ").prop("disabled", true);
     }
 
-    $( "#reset" ).click(function() {
-        $.post("reset");
-        $( "#rev_msg" ).html("");
-        $( "#create_room" ).val("建立房間");
-        $( "#create_room" ).prop('disabled', false);
-    });
-    
-    $( "#create_room" ).click(function() {
-        $( "#create_room" ).prop('disabled', true);
-        $( "#create_room" ).val("已建立");
-    });
+    function room_joined() {
+        $( "#create_room_btn" ).prop("disabled", true);
+        $( "#create_room_btn" ).val("已建立");
+        $( "#create_room_stat" ).html("");
+        $( "#snd_msg_btn" ).prop("disabled", false);
+        $( "#snd_msg" ).prop("disabled", false);
+        $( "#cordn_x" ).prop("disabled", false);
+        $( "#cordn_y" ).prop("disabled", false);
+        $( "#snd_cordn ").prop("disabled", false);
+    }
 
-    $( "#create_room" ).click(function() {
-        let create_room_obj = {
-            func_id: "conn",
+    function ws_connect(onopen) {
+        let ws_prot = "wss";
+        if (window.location.protocol == "http:") {
+            ws_prot = "ws"
+        }
+        ws = new WebSocket(ws_prot + "://" + window.location.hostname + ":" + window.location.port);
+
+        ws.onopen = onopen;
+
+        ws.onmessage = function(e) {
+            let rev_obj = JSON.parse(e.data);
+            switch (rev_obj.func_id) {
+                case "join_res":
+                    switch (rev_obj.code) {
+                        case 0:
+                            room_joined();
+                            break;
+                        case 1:
+                            room_not_created();
+                            break;
+                    }
+                    break;
+                case "create_res":
+                    switch (rev_obj.code) {
+                        case 0:
+                            room_joined();
+                            break;
+                    }
+                    break;
+                case "msg_res":
+                    switch (rev_obj.code) {
+                        case 0:
+                            $( "#rev_msg" ).append(rev_obj.usr_id + ": " + rev_obj.msg + "</br>");
+                            break;
+                        case 1:
+                            room_not_created();
+                            break;
+                    }
+                    break;
+            }
+        }
+        
+        ws.onclose = function(e) {
+            if (e.code == 4000) {
+                room_not_created();
+            } else {
+                setTimeout(function(e) {
+                    ws_connect(join_room);
+                }, 1000);
+            }
+        };
+    }
+
+    function join_room() {
+        let join_room_obj = {
+            func_id: "join",
             usr_id: $( "#usr_id" ).val(),
             room_id: $( "#room_id" ).val()
         };
-        ws.send(JSON.stringify(create_room_obj));
+        ws.send(JSON.stringify(join_room_obj));
+    }
+
+    var ws = null;
+
+    $( "#reset" ).click(function() {
+        ws.close();
+        $.post("reset");
+        $( "#rev_msg" ).html("");
+        room_not_created();
+    });
+    
+    $( "#create_room_btn" ).click(function() {
+        ws_connect(function() {
+            let create_room_obj = {
+                func_id: "create",
+                usr_id: $( "#usr_id" ).val(),
+                room_id: $( "#room_id" ).val()
+            };
+            ws.send(JSON.stringify(create_room_obj));
+        });
     });
 
-    $( "#send_msg" ).click(function() {
-        let send_msg_obj = {
+    $( "#snd_msg_btn" ).click(function() {
+        let snd_msg_obj = {
             func_id: "msg",
             usr_id: $( "#usr_id" ).val(),
             room_id: $( "#room_id" ).val(),
             msg: $( "#snd_msg" ).val()
         };
-        ws.send(JSON.stringify(send_msg_obj));
+        ws.send(JSON.stringify(snd_msg_obj));
     });
 
-    $( "#send_cordn" ).click(function() {
-        let send_cordn_obj = {
+    $( "#snd_cordn" ).click(function() {
+        let snd_cordn_obj = {
             func_id: "cordn",
             usr_id: $( "#usr_id" ).val(),
             room_id: $( "#room_id" ).val(),
             x: $( "#cordn_x" ).val(),
             y: $( "#cordn_y" ).val()
         };
-        ws.send(JSON.stringify(send_cordn_obj));
+        ws.send(JSON.stringify(snd_cordn_obj));
     });
 </script>

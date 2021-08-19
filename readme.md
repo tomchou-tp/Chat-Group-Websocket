@@ -5,6 +5,7 @@
 ```sh
 git clone -b serverless --single-branch https://github.com/tomchou-tp/Chat-Group-Websocket.git
 cd Chat-Group-Websocket
+(Add redis information which includes host, port and password in handler.js)
 npm install
 npm install -g serverless
 serverless offline

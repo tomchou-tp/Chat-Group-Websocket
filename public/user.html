@@ -77,6 +77,7 @@
         $( "#snd_msg_btn" ).prop("disabled", true);
         $( "#snd_msg" ).prop("disabled", true);
         $( "#cordn_sync_ctl" ).prop("disabled", true);
+        ws = null;
     }
 
     function room_joined() {
@@ -93,7 +94,7 @@
         if (window.location.protocol == "http:") {
             ws_prot = "ws"
         }
-        ws = new WebSocket(ws_prot + "://" + window.location.hostname + ":" + window.location.port);
+        ws = new WebSocket(ws_prot + "://" + window.location.hostname + ":3001");
         
         ws.onopen = onopen;
 
@@ -128,6 +129,10 @@
                             break;
                     }
                     break;
+                case "close":
+                    ws.close();
+                    room_not_joined();
+                    break;
             }
         };
 
@@ -135,10 +140,12 @@
             if (e.code == 4000) {
                 room_not_joined();
             } else {
-                ws.close();
-                setTimeout(function(e) {
-                    ws_connect(join_room);
-                }, 1000);
+                if (ws) {
+                    ws.close();
+                    setTimeout(function(e) {
+                        ws_connect(join_room);
+                    }, 500);
+                }
             }
         };
     }
